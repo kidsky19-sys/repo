@@ -24,58 +24,71 @@ class _InputScreenState extends State<InputScreen> {
 
   String modifyText(String src) {
     if (src.trim().isEmpty) return '';
-    String out = src.trim();
+    String raw = src.trim();
 
-    // 욕설/모욕어 마스킹
-    out = out.replaceAllMapped(RegExp(r'바보|멍청이|꺼져|닥쳐', caseSensitive: false), (m) => '***');
+    // 빠른 매핑 규칙: 과격한 언어는 의미만 전달하고 정중하게 바꿈
+    final insultPattern = RegExp(r'바보|멍청이', caseSensitive: false);
+    final aggressivePattern = RegExp(r'꺼져|닥쳐', caseSensitive: false);
 
-    // 공백/문장부호 정규화
-    out = out.replaceAll(RegExp(r'\s+'), ' ');
-
-    // 물음표/느낌표 정리
-    if (RegExp(r'\?+$').hasMatch(out)) {
-      out = out.replaceAll(RegExp(r'\?+$'), '?');
+    if (insultPattern.hasMatch(raw)) {
+      return '그런 표현은 상처가 될 수 있으니 자제해 주세요.'; // 사용자 선택 문구
     }
-    if (RegExp(r'!+$').hasMatch(out)) {
-      out = out.replaceAll(RegExp(r'!+$'), '!');
+    if (aggressivePattern.hasMatch(raw)) {
+      // '꺼져' 등은 '지금은 혼자 있고 싶어요' 같은 의미의 정중한 문장으로 변환
+      return '지금은 혼자 있고 싶어요.';
     }
 
-    // 이미 요 체이면 그대로 반환
-    if (RegExp(r'요$').hasMatch(out)) return out;
+    // 기본 정제
+    String out = raw.replaceAll(RegExp(r'\s+'), ' ');
+
+    // 문장부호 정리
+    out = out.replaceAll(RegExp(r'\?+$'), '?');
+    out = out.replaceAll(RegExp(r'!+$'), '!');
+    out = out.replaceAll(RegExp(r'[\.\!]+$'), '');
+
+    // 미리 자연스러운 매핑 (짧은 단어들)
+    finalMap:
+    {
+      if (RegExp(r'^미안$').hasMatch(out)) return '죄송해요';
+      if (RegExp(r'^고마워$').hasMatch(out)) return '고마워요';
+    }
+
+    // 이미 요 체면 그대로
+    if (out.endsWith('요')) return out;
 
     // '습니다' -> '요'
-    if (RegExp(r'습니다$').hasMatch(out)) {
+    if (out.endsWith('습니다')) {
       out = out.replaceFirst(RegExp(r'습니다$'), '요');
       return out;
     }
 
-    // 물음표인 경우 '요?' 형태로 변환
+    // 질문형 처리
     if (out.endsWith('?')) {
+      // 좀 더 자연스럽게 변환: '언제 오냐?' -> '언제 오실 예정이에요?'
+      // 간단 규칙: If ends with '냐?' -> replace with '실 예정이에요?'
+      if (RegExp(r'냐\?$').hasMatch(out)) {
+        out = out.replaceFirst(RegExp(r'냐\?$'), '실 예정이에요?');
+        return out;
+      }
       out = out.replaceFirst(RegExp(r'\?+$'), '요?');
       return out;
     }
 
-    // 끝의 마침표/느낌표 제거
-    out = out.replaceAll(RegExp(r'[\.\!]+$'), '');
-
-    // '다'로 끝나면 '요'로 변경
-    if (RegExp(r'다$').hasMatch(out)) {
+    // 종결어미 '다' -> '요'
+    if (out.endsWith('다')) {
       out = out.replaceFirst(RegExp(r'다$'), '요');
       return out;
     }
 
-    // 구어체(아/어)나 명령형 어미면 '요'로 마무리
-    if (RegExp(r'[아어]$').hasMatch(out) || RegExp(r'해$').hasMatch(out)) {
+    // 구어체(아/어)나 '해'로 끝나면 '요' 붙이기
+    if (RegExp(r'[아어]$').hasMatch(out) || out.endsWith('해')) {
       out = out + '요';
       return out;
     }
 
-    // 나머지는 '요'로 끝나게 함
+    // 기본: '요' 붙이기
     out = out + '요';
-
-    // 공백 정리
-    out = out.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return out;
+    return out.trim();
   }
 
   Map<String, dynamic> analyze(String text) {
