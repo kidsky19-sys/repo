@@ -13,13 +13,11 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.10.5'
-      - name: Ensure project structure
-        run: |
-          flutter --version
-          flutter create . --project-name prototype_flutter || true
       - name: Get dependencies
+        working-directory: prototype_flutter
         run: flutter pub get
       - name: Build debug APK
+        working-directory: prototype_flutter
         run: flutter build apk --debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
