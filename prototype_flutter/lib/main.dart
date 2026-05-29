@@ -24,10 +24,57 @@ class _InputScreenState extends State<InputScreen> {
 
   String modifyText(String src) {
     if (src.trim().isEmpty) return '';
-    var out = src.replaceAllMapped(RegExp(r"바보|멍청이|꺼져|닥쳐"), (m) => '***');
-    if (!out.endsWith('요') && !out.endsWith('습니다')) {
-      out = out + ' 부탁드립니다.';
+    String out = src.trim();
+
+    // 욕설/모욕어 마스킹
+    out = out.replaceAllMapped(RegExp(r'바보|멍청이|꺼져|닥쳐', caseSensitive: false), (m) => '***');
+
+    // 공백/문장부호 정규화
+    out = out.replaceAll(RegExp(r'\s+'), ' ');
+
+    // 물음표/느낌표 정리
+    if (RegExp(r'\?+$').hasMatch(out)) {
+      out = out.replaceAll(RegExp(r'\?+$'), '?');
     }
+    if (RegExp(r'!+$').hasMatch(out)) {
+      out = out.replaceAll(RegExp(r'!+$'), '!');
+    }
+
+    // 이미 요 체이면 그대로 반환
+    if (RegExp(r'요$').hasMatch(out)) return out;
+
+    // '습니다' -> '요'
+    if (RegExp(r'습니다$').hasMatch(out)) {
+      out = out.replaceFirst(RegExp(r'습니다$'), '요');
+      return out;
+    }
+
+    // 물음표인 경우 '요?' 형태로 변환
+    if (out.endsWith('?')) {
+      out = out.replaceFirst(RegExp(r'\?+$'), '요?');
+      return out;
+    }
+
+    // 끝의 마침표/느낌표 제거
+    out = out.replaceAll(RegExp(r'[\.\!]+$'), '');
+
+    // '다'로 끝나면 '요'로 변경
+    if (RegExp(r'다$').hasMatch(out)) {
+      out = out.replaceFirst(RegExp(r'다$'), '요');
+      return out;
+    }
+
+    // 구어체(아/어)나 명령형 어미면 '요'로 마무리
+    if (RegExp(r'[아어]$').hasMatch(out) || RegExp(r'해$').hasMatch(out)) {
+      out = out + '요';
+      return out;
+    }
+
+    // 나머지는 '요'로 끝나게 함
+    out = out + '요';
+
+    // 공백 정리
+    out = out.replaceAll(RegExp(r'\s+'), ' ').trim();
     return out;
   }
 
