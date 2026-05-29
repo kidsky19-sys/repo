@@ -13,6 +13,12 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.10.5'
+      - name: Ensure Android platform
+        run: |
+          if [ ! -d prototype_flutter/android ]; then
+            cd prototype_flutter
+            flutter create --template app .
+          fi
       - name: Get dependencies
         working-directory: prototype_flutter
         run: flutter pub get
